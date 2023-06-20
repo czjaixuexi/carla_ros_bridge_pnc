@@ -78,7 +78,7 @@ Local planner: Lattice Planner
 
 ```bash
 cd scripts
-./setup_workspace.sh
+./quickly_setup.sh
 ```
 
 **手动配置方式：**

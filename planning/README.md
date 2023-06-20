@@ -12,7 +12,9 @@ TO-DO: EM Planner
 
 #### 视频演示
 
-<iframe src="//player.bilibili.com/player.html?aid=360071646&bvid=BV1PX4y1s7aa&cid=1170152532&page=1" width="500" height="500" scrolling="no" border="0" frameborder="no" framespacing="20" allowfullscreen="true"></iframe>
+[<img src="https://gitee.com/czjaixuexi/typora_pictures/raw/master/img/202306202123205.png" alt="Watch the video" style="zoom: 80%;" />](https://www.bilibili.com/video/BV1PX4y1s7aa/?vd_source=146dad479b5c1bce6dc702c57b43829a)
+
+
 
 #### **Obstacle Avoidance:**
 

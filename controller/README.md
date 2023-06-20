@@ -10,7 +10,7 @@
 
 ### 视频演示
 
-<iframe src="//player.bilibili.com/player.html?aid=955096365&bvid=BV1uW4y1D72M&cid=1170161921&page=1" width="500" height="500" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+[<img src="https://gitee.com/czjaixuexi/typora_pictures/raw/master/img/202306202119623.png" alt="Watch the video" style="zoom: 50%;" />](https://www.bilibili.com/video/BV1uW4y1D72M/?vd_source=146dad479b5c1bce6dc702c57b43829a)
 
 
 

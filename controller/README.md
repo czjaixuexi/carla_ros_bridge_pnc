@@ -4,13 +4,23 @@
 
 纵向控制：PID
 
+
+
+## Overview
+
+### 视频演示
+
+<iframe src="//player.bilibili.com/player.html?aid=955096365&bvid=BV1uW4y1D72M&cid=1170161921&page=1" width="500" height="500" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+
+
+
 ![LQR1](../figure/LQR1.gif)
 
 ![LQR2](../figure/LQR2.gif)
 
 
 
-
+### 
 
 ## Run Controller Demo
 

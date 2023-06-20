@@ -8,19 +8,23 @@ Local planner: Lattice Planner
 
 TO-DO: EM Planner
 
+## Overview
 
+#### 视频演示
 
-**Obstacle Avoidance**
+<iframe src="//player.bilibili.com/player.html?aid=360071646&bvid=BV1PX4y1s7aa&cid=1170152532&page=1" width="500" height="500" scrolling="no" border="0" frameborder="no" framespacing="20" allowfullscreen="true"></iframe>
+
+#### **Obstacle Avoidance:**
 
 ![lp1](../figure/lp1.gif)
 
 
 
-**Overtaking:**
+#### **Overtaking:**
 
 ![lp2](../figure/lp2.gif)
 
-**Following:**
+#### **Following:**
 
 ![lp3](../figure/lp3.gif)
 

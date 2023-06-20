@@ -1,0 +1,34 @@
+<!-- -->
+<launch>
+  <!-- Ego vehicle -->
+  <arg name="role_name" default='ego_vehicle'/>
+  <!-- use comma separated format "x,y,z,roll,pitch,yaw" 90,-193.2,3,0,0,180-->
+  <!-- <arg name="spawn_point" default='-10,-53,3,0,0,-90'/> -->
+  <arg name="spawn_point" default='189.4,-70,2,0,0,-90'/>
+  <!-- <arg name="spawn_point" default=''/> -->
+  <arg name="town" default='Town05'/>
+  <!-- <arg name="town" default=''/> -->
+
+  <arg name="control_method" default='LQR'/><!-- "PurePursuit", "Stanley", "LQR" -->
+  <arg name="planner_activate" default='false'/>
+
+
+  <include file="$(find carla_ros_bridge)/launch/carla_ros_bridge_with_example_ego_vehicle.launch">
+    <arg name='spawn_point' value='$(arg spawn_point)'/>
+    <arg name='town' value='$(arg town)'/>
+  </include>
+
+  <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch" />
+
+  <include file="$(find planning)/launch/planning.launch">
+    <arg name="role_name" value="$(arg role_name)" />
+    <arg name="planner_activate" value="$(arg planner_activate)" />
+  </include>
+
+  <include file="$(find controller)/launch/controller.launch">
+    <arg name="role_name" value="$(arg role_name)" />
+    <arg name="control_method" value="$(arg control_method)" />
+  </include>
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find controller)/rviz/control.rviz"/>
+</launch>

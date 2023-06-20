@@ -1,0 +1,24 @@
+<!-- -->
+<launch>
+  <!-- <param name="/use_sim_time" value="true" /> -->
+  <arg name="role_name" default="ego_vehicle" />
+  <arg name="control_method" default="LQR" /> <!-- "PurePursuit", "Stanley", "LQR" -->
+
+  <node pkg="controller" type="controller" name="controller" output="log">
+    <param name="role_name" type="string" value="$(arg role_name)" />
+    <param name="control_method" type="string" value="$(arg control_method)" />
+    
+    <rosparam command="load" file="$(find controller)/config/controller_config.yaml"/>
+
+    <!-- <param name="k_pure" type="double" value="1.0" /> "PurePursuit"增益系数 -->
+    <!-- <param name="k_cte" type="double" value="3.5" />  "Stanley"增益系数 -->
+
+    <!-- LQR Q R矩阵参数 -->
+    <!-- <param name="Q_ed" type="double" value="10.0" />
+    <param name="Q_ed_dot" type="double" value="1.0" />
+    <param name="Q_ephi" type="double" value="15.0" />
+    <param name="Q_ephi_dot" type="double" value="1.0" />
+    <param name="R_value" type="double" value="9.0" /> -->
+
+  </node>
+</launch>

@@ -1,0 +1,31 @@
+<launch>
+  <arg name="role_name" default="ego_vehicle" />
+  <arg name="path_length" default="50.0" />
+  <!-- <arg name="spawn_point" default='40,-193.2,3,0,0,180'/> -->
+  <!-- <arg name="spawn_point" default='90,-7.0,1.0,0,0,0'/> -->
+  <arg name="spawn_point" default='229.5,-86,2.5,0,0,-90'/>
+  <arg name="town" default='Town03'/>
+
+
+
+
+  <node pkg="planning" type="planning" name="planning" output="screen">
+    <param name="role_name" type="string" value="$(arg role_name)" />
+    <param name="path_length" type="double" value="$(arg path_length)" />
+    <rosparam command="load" file="$(find planning)/config/lattice_planner.yaml"/>
+  </node>
+
+
+  <node pkg="planning" type="cruise_speed_pub" name="cruise_speed_pub" output="screen"/>
+
+  
+  <include file="$(find carla_ros_bridge)/launch/carla_ros_bridge_with_example_ego_vehicle.launch">
+    <arg name='spawn_point' value='$(arg spawn_point)'/>
+    <arg name='town' value='$(arg town)'/>
+  </include>
+
+  
+  <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch" />
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find planning)/rviz/planning.rviz"/>
+</launch>

@@ -1,0 +1,23 @@
+<!-- -->
+<launch>
+
+  <arg name="role_name" default="ego_vehicle" />
+  <arg name="path_length" default="50.0" />
+  <!-- <arg name="spawn_point" default='120,-193.2,3,0,0,180'/> -->
+  <!-- <arg name="spawn_point" default='107,-133.5,0.5,0,0,0'/> -->
+  <!-- <arg name="town" default='Town03'/> -->
+  <!-- <arg name="town" default='Town01'/> -->
+  <arg name="planner_activate" default='true'/>
+  
+  <node pkg="planning" type="planning" name="planning" output="screen">
+    <param name="role_name" type="string" value="$(arg role_name)" />
+    <param name="path_length" type="double" value="$(arg path_length)" />
+    <rosparam command="load" file="$(find planning)/config/lattice_planner.yaml"/>
+
+    <param name="planner_activate" type="bool" value="$(arg planner_activate)" />
+  </node>
+
+  <node pkg="planning" type="cruise_speed_pub" name="cruise_speed_pub" output="screen"/>
+
+
+</launch>

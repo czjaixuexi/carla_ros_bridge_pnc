@@ -1,0 +1,12 @@
+#Lattice Planner 路径采样相关参数
+
+sample_max_time: 4.0 # 最大采样时间
+sample_min_time: 2.5  #最小采样时间
+sample_time_step: 0.5 # 采样时间step
+sample_lat_width: 3.75 # 采样横向距离
+sample_width_length: 0.25 #采样横向距离间隔
+
+w_object: 0.1 # 纵向目标代价
+w_lon_jerk: 0.01 # 纵向舒适代价
+w_lat_offset: 40.0 # 横向偏离代价
+w_lat_acc: 0.01 # 横向舒适代价

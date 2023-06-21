@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Using the default rosinstall file!"
-CONFIG_FILE= workspace.rosinstall
+CONFIG_FILE=workspace.rosinstall
 ROSINSTALLFILE=$(cd $(dirname $CONFIG_FILE) && pwd -P)/$CONFIG_FILE
 
 # Install dependencies

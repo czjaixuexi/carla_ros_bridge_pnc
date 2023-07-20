@@ -51,16 +51,24 @@ namespace carla_pnc
   public:
     double s;
     double l;
-    double s_d;
-    double l_d;
+
+    //对时间导数,点导
+    double s_d; 
+    double l_d; 
     double s_d_d;
     double l_d_d;
-
-    // 计算jerk代价用
     double s_d_d_d;
     double l_d_d_d;
 
+    //对s导数，撇导
+    double l_ds;
+    double l_d_ds;
+    double l_d_d_ds;
     double ds; // 计算曲率用
+
+    // dp path中用来计算cost
+    double dp_cost; //该点到起始点的cost
+    int dp_pre_row;//该点最小cost的上一个点的行号
   };
 
   class FrenetPath

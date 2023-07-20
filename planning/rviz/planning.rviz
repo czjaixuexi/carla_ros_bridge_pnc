@@ -255,7 +255,7 @@ Visualization Manager:
       Marker Topic: /speed_marker_text
       Name: Marker
       Namespaces:
-        planning/speed_marker: true
+        {}
       Queue Size: 100
       Value: true
     - Class: jsk_rviz_plugin/PieChart
@@ -308,7 +308,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -9.464985847473145
+      Angle: -3.1449618339538574
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -318,10 +318,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 14.689425468444824
+      Scale: 8.511065483093262
       Target Frame: <Fixed Frame>
-      X: 199.92799377441406
-      Y: -131.48919677734375
+      X: 165.1738739013672
+      Y: -155.74771118164062
     Saved: ~
 Window Geometry:
   Camera:
@@ -348,4 +348,4 @@ Window Geometry:
     collapsed: true
   Width: 2516
   X: 841
-  Y: 258
+  Y: 54

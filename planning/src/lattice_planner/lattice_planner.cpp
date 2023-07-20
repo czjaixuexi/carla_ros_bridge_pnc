@@ -9,43 +9,56 @@ using namespace std;
 namespace carla_pnc
 {
 
-  /**
-   * @brief Cartesian转Frenet
-   *
-   * @param global_point 待转换点的全局轨迹点
-   * @param projection_point 投影点
-   * @return FrenetPoint
-   */
-  FrenetPoint Cartesian2Frenet(const car_state &global_point,
-                               const path_point &projection_point)
-  {
-    FrenetPoint frenet_point;
-    frenet_point.x = global_point.x;
-    frenet_point.y = global_point.y;
-    frenet_point.v = global_point.v;
-    double delta_theta = global_point.yaw - projection_point.yaw;
-    // 计算s
-    frenet_point.s = projection_point.s_;
-    // 计算l
-    int sign = ((global_point.y - projection_point.y) * std::cos(projection_point.yaw) -
-                (global_point.x - projection_point.x) * std::sin(projection_point.yaw)) > 0
-                   ? 1
-                   : -1;
+  // /**
+  //  * @brief Cartesian转Frenet
+  //  *
+  //  * @param global_point 待转换点的全局轨迹点
+  //  * @param projection_point 投影点
+  //  * @return FrenetPoint
+  //  */
+  // FrenetPoint Cartesian2Frenet(const car_state &global_point,
+  //                              const path_point &projection_point)
+  // {
+  //   FrenetPoint frenet_point;
+  //   frenet_point.x = global_point.x;
+  //   frenet_point.y = global_point.y;
+  //   frenet_point.v = global_point.v;
+  //   double delta_theta = global_point.yaw - projection_point.yaw;
+  //   // 计算s
+  //   frenet_point.s = projection_point.s_;
+  //   // 计算l
 
-    frenet_point.l = sign * cal_distance(global_point.x, global_point.y,
-                                         projection_point.x, projection_point.y);
+  //   // 计算l = (x_or- ->x_r_or) * n_or
+  //   Eigen::Matrix<double, 2, 1> x_or;
+  //   x_or << global_point.x, global_point.y;
 
-    // 计算s_d
-    frenet_point.s_d = global_point.v * std::cos(delta_theta) /
-                       (1 - projection_point.cur * frenet_point.l);
-    // ROS_INFO("calculated s_d = :%.2f",frenet_point.s_d);
-    // 计算l_d
-    frenet_point.l_d = global_point.v * std::sin(delta_theta);
+  //   Eigen::Matrix<double, 2, 1> x_r_or;
+  //   x_r_or << projection_point.x, projection_point.y;
 
-    // 计算l_d_d
-    frenet_point.l_d_d = global_point.a * std::sin(delta_theta);
-    return frenet_point;
-  }
+  //   Eigen::Matrix<double, 2, 1> n_or;
+  //   n_or << -sin(projection_point.yaw), cos(projection_point.yaw);
+
+  //   frenet_point.l = (x_or - x_r_or).transpose() * n_or;
+
+  //   // int sign = ((global_point.y - projection_point.y) * std::cos(projection_point.yaw) -
+  //   //             (global_point.x - projection_point.x) * std::sin(projection_point.yaw)) > 0
+  //   //                ? 1
+  //   //                : -1;
+
+  //   // frenet_point.l = sign * cal_distance(global_point.x, global_point.y,
+  //   //                                      projection_point.x, projection_point.y);
+
+  //   // 计算s_d
+  //   frenet_point.s_d = global_point.v * std::cos(delta_theta) /
+  //                      (1 - projection_point.cur * frenet_point.l);
+  //   // ROS_INFO("calculated s_d = :%.2f",frenet_point.s_d);
+  //   // 计算l_d
+  //   frenet_point.l_d = global_point.v * std::sin(delta_theta);
+
+  //   // 计算l_d_d
+  //   frenet_point.l_d_d = global_point.a * std::sin(delta_theta);
+  //   return frenet_point;
+  // }
 
   /**
    * @brief Construct a new Lattice Planner:: Lattice Planner object
@@ -62,23 +75,20 @@ namespace carla_pnc
    * @param cruise_speed 巡航车速
    * @param collision_detection 碰撞检测模块
    */
-  LatticePlanner::LatticePlanner(const double &sample_max_time, const double &sample_min_time, const double &sample_time_step,
-                                 const double &sample_lat_width, const double &sample_width_length,
-                                 const double &w_object, const double &w_lon_jerk,
-                                 const double &w_lat_offset, const double &w_lat_acc,
+  LatticePlanner::LatticePlanner(std::unordered_map<std::string, double> &lattice_params,
                                  const double &cruise_speed,
                                  const CollisionDetection &collision_detection)
   {
-    this->sample_max_time = sample_max_time;
-    this->sample_min_time = sample_min_time;
-    this->sample_time_step = sample_time_step;
-    this->sample_lat_width = sample_lat_width;
-    this->sample_width_length = sample_width_length;
+    this->sample_max_time = lattice_params["sample_max_time"];
+    this->sample_min_time = lattice_params["sample_min_time"];
+    this->sample_time_step = lattice_params["sample_time_step"];
+    this->sample_lat_width = lattice_params["sample_lat_width"];
+    this->sample_width_length = lattice_params["sample_width_length"];
 
-    this->w_object = w_object;
-    this->w_lon_jerk = w_lon_jerk;
-    this->w_lat_offset = w_lat_offset;
-    this->w_lat_acc = w_lat_acc;
+    this->w_object = lattice_params["w_object"];
+    this->w_lon_jerk = lattice_params["w_lon_jerk"];
+    this->w_lat_offset = lattice_params["w_lat_offset"];
+    this->w_lat_acc = lattice_params["w_lat_acc"];
 
     this->cruise_speed = cruise_speed;
     this->collision_detection = collision_detection;
@@ -263,7 +273,7 @@ namespace carla_pnc
       for (double Li = -1 * sample_lat_width; Li <= sample_lat_width; Li += sample_width_length)
       {
         // l关于t的五次多项式曲线
-        QuinticPolynomial lat_qp(initial_point.l, initial_point.l_d, initial_point.l_d_d, Li, 0.0, 0.0, Ti);
+        QuinticPolynomial lat_qp(initial_point.l, initial_point.l_d, initial_point.l_d_d, Li, 0.0, 0.0, 0.0, Ti);
 
         // 横纵向结合的轨迹
         FrenetPath fp;
@@ -276,6 +286,7 @@ namespace carla_pnc
           fpoint.t = t;
           // 计算轨迹点的纵向信息
           calc_lon_values(lon_qp, fpoint);
+          // ROS_INFO("1");
           // 计算轨迹点的横向信息
           calc_lat_values(lat_qp, fpoint);
           fp.frenet_path.push_back(fpoint);
@@ -296,7 +307,6 @@ namespace carla_pnc
         double lon_objective_cost = calc_lon_objective_cost(fp, cruise_speed);
         // 纵向jerk cost
         double lon_jerk_cost = calc_lon_jerk_cost(fp);
-
         // TO-DO 先不加看看效果
         // double calc_centri_acc_cost(const FrenetPath &fp);
 
@@ -336,14 +346,14 @@ namespace carla_pnc
     for (double Ti = sample_min_time; Ti <= sample_max_time; Ti += sample_time_step)
     {
       // s关于t的五次多项式曲线
-      QuinticPolynomial lon_qp(initial_point.s, initial_point.s_d, 0.0, leader_point.s - 8.0, min(V, leader_point.v), 0.0, Ti);
+      QuinticPolynomial lon_qp(initial_point.s, initial_point.s_d, 0.0, leader_point.s - 8.0, min(V, leader_point.v), 0.0, 0.0, Ti);
 
       /***********************************横向轨迹采样**************************************/
       // 对横向位移 l 进行采样
       for (double Li = -0.5 * sample_lat_width; Li <= 0.5 * sample_lat_width; Li += sample_width_length)
       {
         // l关于t的五次多项式曲线
-        QuinticPolynomial lat_qp(initial_point.l, initial_point.l_d, initial_point.l_d_d, Li, 0.0, 0.0, Ti);
+        QuinticPolynomial lat_qp(initial_point.l, initial_point.l_d, initial_point.l_d_d, Li, 0.0, 0.0, 0.0, Ti);
 
         // 横纵向结合的轨迹
         FrenetPath fp;

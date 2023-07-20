@@ -13,7 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-
+#include <unordered_map>
 #include "std_msgs/String.h"
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Quaternion.h>
@@ -36,8 +36,10 @@
 #include "collision_detection/collision_detection.h"
 #include "reference_line/reference_line.h"
 #include "lattice_planner/lattice_planner.h"
+#include "em_planner/em_planner.h"
 #include "reference_line/cubic_spline.hpp"
 #include "point_types.h"
+#include "common.h"
 
 namespace carla_pnc
 {
@@ -71,23 +73,60 @@ namespace carla_pnc
 
         /***********************************Params**************************************/
         std::string role_name;
-
+        std::string planning_method;
         // collision_detection params
         double collision_distance;
 
-        // lattice_planner params
-        double sample_max_time;     // 最大采样时间
-        double sample_min_time;     // 最小采样时间
-        double sample_time_step;    // 采样时间step
-        double sample_lat_width;    // 采样横向距离
-        double sample_width_length; // 采样横向距离间隔
+        bool use_discrete_smooth; // 是否使用离散点平滑（Apollo）默认为false
+        std::unordered_map<std::string, double> lattice_params;
+        std::unordered_map<std::string, double> referline_params;
+        std::unordered_map<std::string, double> dp_path_params;
+        std::unordered_map<std::string, double> qp_path_params;
 
-        double w_object;     // 纵向目标代价
-        double w_lon_jerk;   // 纵向舒适代价
-        double w_lat_offset; // 横向偏离代价
-        double w_lat_acc;    // 横向舒适代价
+        // // lattice_planner params
+        // double sample_max_time;     // 最大采样时间
+        // double sample_min_time;     // 最小采样时间
+        // double sample_time_step;    // 采样时间step
+        // double sample_lat_width;    // 采样横向距离
+        // double sample_width_length; // 采样横向距离间隔
 
-        // double w_collision;
+        // double w_object;     // 纵向目标代价
+        // double w_lon_jerk;   // 纵向舒适代价
+        // double w_lat_offset; // 横向偏离代价
+        // double w_lat_acc;    // 横向舒适代价
+
+        // // Referenceline平滑相关参数
+        // double ref_weight_smooth;        // 参考线平滑代价
+        // double ref_weight_path_length;   // 参考线轨迹长度代价
+        // double ref_weight_ref_deviation; // 参考线偏移代价
+        // // 二次规划几何相似度约束
+        // double x_lower_bound;
+        // double x_upper_bound;
+        // double y_lower_bound;
+        // double y_upper_bound;
+
+        // // DP path
+        // double dp_sample_l = 1.0; // dp采样横向距离间隔
+        // double dp_sample_s = 5.0; // dp采样纵向距离间隔
+        // int dp_sample_rows = 5;   // dp采样行数（横向）
+        // int dp_sample_cols = 5;   // dp采样列数（纵向）
+
+        // double dp_cost_collision = 10e8; // dp碰撞代价
+        // double dp_cost_dl = 150;
+        // double dp_cost_ddl = 10;
+        // double dp_cost_dddl = 1;
+        // double dp_cost_ref = 100;
+
+        // // QP Path cost
+        // double qp_cost_l = 15;
+        // double qp_cost_dl = 150;
+        // double qp_cost_ddl = 10;
+        // double qp_cost_dddl = 1;
+        // double qp_cost_ref = 15;
+        // double qp_cost_end_l = 0;
+        // double qp_cost_end_dl = 0;
+        // double qp_cost_end_ddl = 0;
+
         /***********************************Subscriber**************************************/
 
         ros::Subscriber cur_pose_sub;         // 获取车辆当前状态

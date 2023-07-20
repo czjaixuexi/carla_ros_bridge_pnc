@@ -72,7 +72,8 @@ namespace carla_pnc
     Controller(const std::string &lat_control_method,
                const double &k_pure, const double &k_cte,
                const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R,
-               const double &kp, const double &ki, const double &kd);
+               const double &kp, const double &ki, const double &kd,
+               std::vector<Eigen::Matrix<double, 1, 4>> &lqr_k_table);
 
     void update_car_state(const car_state &cur_pose,
                           const double &timestamp);
@@ -83,9 +84,8 @@ namespace carla_pnc
 
     void cal_heading(std::vector<car_state> &waypoints);
 
-
     /***********************************控制命令相关**************************************/
-    
+
     std::vector<double> get_commands() { return commands; }
 
     void set_throttle(const double &input_throttle);
@@ -99,14 +99,14 @@ namespace carla_pnc
     void reset_all_previous();
 
   protected:
-    std::string lat_control_method;                   // 横向控制方法
-    std::unordered_map<std::string, double> previous; // 用于临时存储一些上一循环周期的变量
-    car_state cur_pose;                               // 车辆当前状态
-    double cur_time;                                  // 当前时间戳
-    bool first_loop;                                  // 判断是否为第一次循环
-    std::vector<car_state> waypoints;                 // 局部路径信息 x,y, x方向速度
-    std::vector<double> commands;                     // throttle, steer, brake
-
+    std::string lat_control_method;                       // 横向控制方法
+    std::unordered_map<std::string, double> previous;     // 用于临时存储一些上一循环周期的变量
+    car_state cur_pose;                                   // 车辆当前状态
+    double cur_time;                                      // 当前时间戳
+    bool first_loop;                                      // 判断是否为第一次循环
+    std::vector<car_state> waypoints;                     // 局部路径信息 x,y, x方向速度
+    std::vector<double> commands;                         // throttle, steer, brake
+    std::vector<Eigen::Matrix<double, 1, 4>> lqr_k_table; // LQR离线求解后的k
     /***********************************横向控制参数**************************************/
     double k_pure;           // purepursuit前视距离系数
     double k_cte;            // Stanley 增益系数
@@ -147,7 +147,7 @@ namespace carla_pnc
                                               const double &target_index,
                                               const std::vector<car_state> &waypoints);
 
-    Eigen::Matrix<double, 1, 4> cal_dlqr(double vx);
+    // Eigen::Matrix<double, 1, 4> cal_dlqr(double vx);
 
     double cal_forward_angle(const Eigen::Matrix<double, 1, 4> &k,
                              const double &cur,

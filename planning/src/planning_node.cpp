@@ -22,20 +22,56 @@ namespace carla_pnc
         n.param<double>("path_length", path_length, 50.0);
         n.param<bool>("planner_activate", planner_activate, true);
 
+        n.param<string>("planning_method", planning_method, "EM");
+
         // collision_detection params
         n.param<double>("collision_distance", collision_distance, 1.15);
 
         // lattice_planner params
-        n.param<double>("sample_max_time", sample_max_time, 4.0);
-        n.param<double>("sample_min_time", sample_min_time, 2.0);
-        n.param<double>("sample_time_step", sample_time_step, 0.5);
-        n.param<double>("sample_lat_width", sample_lat_width, 3.5);
-        n.param<double>("sample_width_length", sample_width_length, 0.5);
+        n.param<double>("sample_max_time", lattice_params["sample_max_time"], 4.0);
+        n.param<double>("sample_min_time", lattice_params["sample_min_time"], 2.0);
+        n.param<double>("sample_time_step", lattice_params["sample_time_step"], 0.5);
+        n.param<double>("sample_lat_width", lattice_params["sample_lat_width"], 3.5);
+        n.param<double>("sample_width_length", lattice_params["sample_width_length"], 0.5);
 
-        n.param<double>("w_object", w_object, 1.0);
-        n.param<double>("w_lon_jerk", w_lon_jerk, 0.01);
-        n.param<double>("w_lat_offset", w_lat_offset, 10.0);
-        n.param<double>("w_lat_acc", w_lat_acc, 0.01);
+        n.param<double>("w_object", lattice_params["w_object"], 1.0);
+        n.param<double>("w_lon_jerk", lattice_params["w_lon_jerk"], 0.01);
+        n.param<double>("w_lat_offset", lattice_params["w_lat_offset"], 10.0);
+        n.param<double>("w_lat_acc", lattice_params["w_lat_acc"], 0.01);
+
+        // reference_line smoother params(仅用于离散点平滑方法)
+        n.param<double>("ref_weight_smooth", referline_params["ref_weight_smooth"], 70.0);
+        n.param<double>("ref_weight_path_length", referline_params["ref_weight_path_length"], 10.0);
+        n.param<double>("ref_weight_ref_deviation", referline_params["w_lat_offset"], 20.0);
+        n.param<double>("x_lower_bound", referline_params["x_lower_bound"], -2.0);
+        n.param<double>("x_upper_bound", referline_params["x_upper_bound"], 2.0);
+        n.param<double>("y_lower_bound", referline_params["y_lower_bound"], -2.0);
+        n.param<double>("y_upper_bound", referline_params["y_upper_bound"], 2.0);
+        n.param<bool>("use_discrete_smooth", use_discrete_smooth, false);
+
+        // EM planner params
+        // DP path
+        n.param<double>("dp_sample_l", dp_path_params["dp_sample_l"], 1.0);
+        n.param<double>("dp_sample_s", dp_path_params["dp_sample_s"], 5.0);
+        n.param<double>("dp_sample_rows", dp_path_params["dp_sample_rows"], 5);
+        n.param<double>("dp_sample_cols", dp_path_params["dp_sample_cols"], 5);
+
+        n.param<double>("dp_cost_collision", dp_path_params["dp_cost_collision"], 10e8);
+        n.param<double>("dp_cost_dl", dp_path_params["dp_cost_dl"], 150);
+        n.param<double>("dp_cost_ddl", dp_path_params["dp_cost_ddl"], 10);
+        n.param<double>("dp_cost_dddl", dp_path_params["dp_cost_dddl"], 1);
+        n.param<double>("dp_cost_ref", dp_path_params["dp_cost_ref"], 100);
+
+        // QP path
+        n.param<double>("qp_cost_l", qp_path_params["qp_cost_l"], 15);
+        n.param<double>("qp_cost_dl", qp_path_params["qp_cost_dl"], 1500);
+        n.param<double>("qp_cost_ddl", qp_path_params["qp_cost_ddl"], 10);
+        n.param<double>("qp_cost_dddl", qp_path_params["qp_cost_dddl"], 1);
+        n.param<double>("qp_cost_ref", qp_path_params["qp_cost_ref"], 5);
+        n.param<double>("qp_cost_end_l", qp_path_params["qp_cost_end_l"], 0);
+        n.param<double>("qp_cost_end_dl", qp_path_params["qp_cost_end_dl"], 0);
+        n.param<double>("qp_cost_end_ddl", qp_path_params["qp_cost_end_ddl"], 0);
+
         // setup subscriber
         cur_pose_sub = n.subscribe("/carla/" + role_name + "/odometry", 10, &PlanningNode::callbackCarlaOdom, this);
         global_path_sub = n.subscribe("/carla/" + role_name + "/waypoints", 10, &PlanningNode::callbackGlobalPath, this);
@@ -203,7 +239,17 @@ namespace carla_pnc
 
         /***********************************路径规划**************************************/
 
-        carla_pnc::ReferenceLine reference_line(path_length);
+        // carla_pnc::ReferenceLine reference_line(path_length,
+        //                                         ref_weight_smooth,
+        //                                         ref_weight_path_length,
+        //                                         ref_weight_ref_deviation,
+        //                                         x_lower_bound,
+        //                                         x_upper_bound,
+        //                                         y_lower_bound,
+        //                                         y_upper_bound);
+
+        carla_pnc::ReferenceLine reference_line(path_length,
+                                                referline_params);
 
         // double prev_timestamp = ros::Time::now().toSec();
 
@@ -237,9 +283,18 @@ namespace carla_pnc
                     }
                     Spline2D ref_frenet(x_set, y_set);
 
-                    // 获得平滑后的参考线
-                    ref_path = reference_line.smoothing(ref_frenet, local_path);
-
+                    // 离散点平滑
+                    if (use_discrete_smooth)
+                    {
+                        // ROS_INFO("discrete_smooth");
+                        ref_path = reference_line.discrete_smooth(local_path);
+                    }
+                    // cubic Spline平滑
+                    else
+                    {
+                        // ROS_INFO("curblic Spline smooth");
+                        ref_path = reference_line.smoothing(ref_frenet, local_path);
+                    }
                     /***********************************Step3 确认规划起点，并投影到Frenet坐标系中得到（s0,l0）**************************************/
                     if (planner_activate)
                     {
@@ -256,14 +311,20 @@ namespace carla_pnc
                          * 若相差过大，则根据车辆当前位置，通过运动学公式后获取推一个周期的位置，作为本周期的规划起点
                          */
                         else if (fabs(cur_pose.x - pre_final_path.frenet_path[0].x) > 2.0 ||
-                                 fabs(cur_pose.y - pre_final_path.frenet_path[0].y) > 0.9)
+                                 fabs(cur_pose.y - pre_final_path.frenet_path[0].y) > 0.5)
                         {
                             // 运动学公式后推100ms的位置
                             car_state next_pose;
                             double dt = 0.1;
                             next_pose = cur_pose;
-                            next_pose.x = cur_pose.x + cur_pose.vx * dt + 0.5 * cur_pose.ax * dt * dt;
-                            next_pose.y = cur_pose.y + cur_pose.vy * dt + 0.5 * cur_pose.vy * dt * dt;
+
+                            // 车身速度转全局速度
+                            double vx = cur_pose.vx * cos(cur_pose.yaw) - cur_pose.vy * sin(cur_pose.yaw);
+                            double vy = cur_pose.vy * sin(cur_pose.yaw) + cur_pose.vy * cos(cur_pose.yaw);
+
+                            next_pose.x = cur_pose.x + vx * dt + 0.5 * vx * dt * dt;
+                            next_pose.y = cur_pose.y + vy * dt + 0.5 * vy * dt * dt;
+
                             next_pose.vx = cur_pose.vx + cur_pose.ax * dt;
                             next_pose.vy = cur_pose.vy + cur_pose.ay * dt;
                             next_pose.v = sqrt(pow(next_pose.vx, 2) + pow(next_pose.vy, 2));
@@ -273,86 +334,130 @@ namespace carla_pnc
                         // 若相差不大,则选用current_time+100ms的轨迹点作为规划起点进行规划，作为本周期的规划起点
                         else if (pre_final_path.frenet_path.size())
                         {
-                            global_initial_point = pre_final_path.frenet_path[5];
+                            if (planning_method == "Lattice")
+                            {
+                                global_initial_point = pre_final_path.frenet_path[5];
+                            }
+                            else
+                            {   
+                                // EM Planner目前只完成路径规划部分，还没有时间信息，暂时先用运动学推导位置
+                                // 运动学公式后推100ms的位置
+                                car_state next_pose;
+                                double dt = 0.1;
+                                next_pose = cur_pose;
+
+                                // 车身速度转全局速度
+                                double vx = cur_pose.vx * cos(cur_pose.yaw) - cur_pose.vy * sin(cur_pose.yaw);
+                                double vy = cur_pose.vy * sin(cur_pose.yaw) + cur_pose.vy * cos(cur_pose.yaw);
+
+                                next_pose.x = cur_pose.x + vx * dt + 0.5 * vx * dt * dt;
+                                next_pose.y = cur_pose.y + vy * dt + 0.5 * vy * dt * dt;
+
+                                next_pose.vx = cur_pose.vx + cur_pose.ax * dt;
+                                next_pose.vy = cur_pose.vy + cur_pose.ay * dt;
+                                next_pose.v = sqrt(pow(next_pose.vx, 2) + pow(next_pose.vy, 2));
+
+                                global_initial_point = next_pose;
+                            }
+
+                            // global_initial_point = cur_pose;
                         }
 
                         // 将规划起点投影到Frenet坐标系中
-                        // 计算匹配点下标
-                        int frenet_match_index = search_match_index(global_initial_point.x, global_initial_point.y, ref_path, 0);
+                        // // 计算匹配点下标
+                        // int frenet_match_index = search_match_index(global_initial_point.x, global_initial_point.y, ref_path, 0);
 
-                        // 通过匹配点求投影点
-                        path_point projection_point = match_to_projection(global_initial_point, ref_path[frenet_match_index]);
+                        // // 通过匹配点求投影点
+                        // path_point projection_point = match_to_projection(global_initial_point, ref_path[frenet_match_index]);
 
-                        // 计算Frenet坐标
-                        FrenetPoint frenet_initial_point = Cartesian2Frenet(global_initial_point, projection_point);
+                        // // 计算Frenet坐标
+                        // FrenetPoint frenet_initial_point = Cartesian2Frenet(global_initial_point, projection_point);
 
+                        FrenetPoint frenet_initial_point = calc_frenet(global_initial_point, ref_path);
                         // ROS_INFO("Get Initial Point Successfully");
 
                         /***********************************Step4 Lattice Planner**************************************/
 
-                        CollisionDetection collision_detection(detected_objects, collision_distance); // 碰撞检测模块
+                        CollisionDetection collision_detection(detected_objects, collision_distance, ref_path); // 碰撞检测模块
 
-                        LatticePlanner planner(sample_max_time, sample_min_time, sample_time_step,
-                                               sample_lat_width, sample_width_length,
-                                               w_object, w_lon_jerk,
-                                               w_lat_offset, w_lat_acc,
-                                               cruise_speed,
-                                               collision_detection);
-                        car_follow = false;
-                        FrenetPoint leader_car;
-                        // 将动态障碍物投影到Frenet坐标系中
-                        for (Obstacle &object : collision_detection.dynamic_obstacle_list)
+                        if (planning_method == "Lattice")
                         {
-                            // 计算匹配点下标
-                            int frenet_match_index = search_match_index(object.point.x, object.point.y, ref_path, 0);
+                            // LatticePlanner planner(sample_max_time, sample_min_time, sample_time_step,
+                            //                        sample_lat_width, sample_width_length,
+                            //                        w_object, w_lon_jerk,
+                            //                        w_lat_offset, w_lat_acc,
+                            //                        cruise_speed,
+                            //                        collision_detection);
 
-                            // 通过匹配点求投影点
-                            path_point pro_point = match_to_projection(object.point, ref_path[frenet_match_index]);
-
-                            // ROS_INFO("leader car speed:%.2f , position,x:%.2f,y:%.2f", object.point.v, object.point.x, object.point.y);
-
-                            // 计算障碍物的Frenet坐标
-                            FrenetPoint ob_fp = Cartesian2Frenet(object.point, pro_point);
-                            // ROS_INFO("leader car speed:%.2f , position,x:%.2f,y:%.2f",ob_fp.s_d,ob_fp.s,ob_fp.l);
-                            // ROS_INFO("self car speed:%.2f , position,x:%.2f,y:%.2f",frenet_initial_point.s_d,frenet_initial_point.s,frenet_initial_point.l);
-
-                            // 跟车判定条件： 目标大于循环车速 * 0.6
-                            /**
-                             * 跟车判定条件：
-                             * 1.在本车前方
-                             * 2.横向距离小于2.0(本车道内)
-                             * 3.纵向距离小于 3.0 * 巡航车速
-                             * 4.纵向距离大于安全距离(在Planner中实现)
-                             * 4.车速大于等于0.6*巡航车速
-                             */
-                            if (ob_fp.s > frenet_initial_point.s &&
-                                fabs(ob_fp.l - frenet_initial_point.l) < 2.0 &&
-                                fabs(ob_fp.s - frenet_initial_point.s) < 3.0 * cruise_speed &&
-                                object.point.v > 0.6 * cruise_speed)
+                            LatticePlanner planner(lattice_params,
+                                                   cruise_speed,
+                                                   collision_detection);
+                            car_follow = false;
+                            FrenetPoint leader_car;
+                            // 将动态障碍物投影到Frenet坐标系中
+                            for (Obstacle &object : collision_detection.dynamic_obstacle_list)
                             {
+                                // 计算匹配点下标
+                                int frenet_match_index = search_match_index(object.point.x, object.point.y, ref_path, 0);
+
+                                // 通过匹配点求投影点
+                                path_point pro_point = match_to_projection(object.point, ref_path[frenet_match_index]);
+
+                                // ROS_INFO("leader car speed:%.2f , position,x:%.2f,y:%.2f", object.point.v, object.point.x, object.point.y);
+
+                                // 计算障碍物的Frenet坐标
+                                FrenetPoint ob_fp = Cartesian2Frenet(object.point, pro_point);
                                 // ROS_INFO("leader car speed:%.2f , position,x:%.2f,y:%.2f",ob_fp.s_d,ob_fp.s,ob_fp.l);
-                                car_follow = true;
-                                leader_car = ob_fp;
-                                break;
+                                // ROS_INFO("self car speed:%.2f , position,x:%.2f,y:%.2f",frenet_initial_point.s_d,frenet_initial_point.s,frenet_initial_point.l);
+
+                                // 跟车判定条件： 目标大于循环车速 * 0.6
+                                /**
+                                 * 跟车判定条件：
+                                 * 1.在本车前方
+                                 * 2.横向距离小于2.0(本车道内)
+                                 * 3.纵向距离小于 3.0 * 巡航车速
+                                 * 4.纵向距离大于安全距离(在Planner中实现)
+                                 * 4.车速大于等于0.6*巡航车速
+                                 */
+                                if (ob_fp.s > frenet_initial_point.s &&
+                                    fabs(ob_fp.l - frenet_initial_point.l) < 2.0 &&
+                                    fabs(ob_fp.s - frenet_initial_point.s) < 3.0 * cruise_speed &&
+                                    object.point.v > 0.6 * cruise_speed)
+                                {
+                                    // ROS_INFO("leader car speed:%.2f , position,x:%.2f,y:%.2f",ob_fp.s_d,ob_fp.s,ob_fp.l);
+                                    car_follow = true;
+                                    leader_car = ob_fp;
+                                    break;
+                                }
                             }
+                            // 所有的采样轨迹，用于可视化
+                            sample_paths = planner.get_planning_paths(ref_frenet, frenet_initial_point, leader_car, car_follow);
+
+                            // 获取最佳轨迹
+                            final_path = planner.planning(ref_frenet, frenet_initial_point, leader_car, car_follow);
+
+                            pre_final_path = final_path; // 用于存储上一个周期的轨迹
+
+                            history_paths.push_back(final_path); // 历史轨迹，用于可视化
+
+                            ROS_INFO("Selected best path successfully,the size is%d", final_path.size_);
+                            // ROS_INFO("Selected paths successfully,the size is%zu", sample_paths.size());
+
+                            // for(unsigned int i = 0; i< final_path.size_;i++){
+                            //     ROS_INFO("best path____x:%.2f,  y:%.2f", final_path.frenet_path[i].x,final_path.frenet_path[i].y);
+                            // }
                         }
-                        // 所有的采样轨迹，用于可视化
-                        sample_paths = planner.get_planning_paths(ref_frenet, frenet_initial_point, leader_car, car_follow);
-
-                        // 获取最佳轨迹
-                        final_path = planner.planning(ref_frenet, frenet_initial_point, leader_car, car_follow);
-
-                        pre_final_path = final_path; // 用于存储上一个周期的轨迹
-
-                        history_paths.push_back(final_path); // 历史轨迹，用于可视化
-
-                        ROS_INFO("Selected best path successfully,the size is%d", final_path.size_);
-                        // ROS_INFO("Selected paths successfully,the size is%zu", sample_paths.size());
-
-                        // for(unsigned int i = 0; i< final_path.size_;i++){
-                        //     ROS_INFO("best path____x:%.2f,  y:%.2f", final_path.frenet_path[i].x,final_path.frenet_path[i].y);
-                        // }
-
+                        else if (planning_method == "EM")
+                        {
+                            EMPlanner planner(collision_detection,
+                                              dp_path_params,
+                                              qp_path_params);
+                                              
+                            final_path = planner.planning(ref_frenet, frenet_initial_point);
+                            pre_final_path = final_path;         // 用于存储上一个周期的轨迹
+                            history_paths.push_back(final_path); // 历史轨迹，用于可视化
+                            ROS_INFO("Selected best path successfully,the size is%d", final_path.size_);
+                        }
                         /*******************************visualization******************************************/
                         // 最优规划轨迹Rviz可视化
                         final_path_visualization(final_path);
@@ -414,13 +519,12 @@ namespace carla_pnc
         }
     }
 
-
-/***********************************visualization**************************************/
+    /***********************************visualization**************************************/
 
     /**
      * @brief 发布参考线用于Rviz可视化
-     * 
-     * @param ref_path 
+     *
+     * @param ref_path
      */
     void PlanningNode::ref_path_visualization(const std::vector<path_point> &ref_path)
     {
@@ -440,8 +544,6 @@ namespace carla_pnc
         }
         ref_path_pub.publish(path);
     }
-
-
 
     /**
      * @brief 发布最优规划轨迹用于Rviz可视化

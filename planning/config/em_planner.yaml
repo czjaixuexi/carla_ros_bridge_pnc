@@ -1,0 +1,28 @@
+#EM Planner 相关参数
+
+#########路径规划相关##############
+#DP Path cost
+dp_sample_l: 1.0 # dp采样横向距离间隔
+dp_sample_s: 5.0 # dp采样纵向距离间隔
+dp_sample_rows: 5 # dp采样行数（横向）
+dp_sample_cols: 5  # dp采样列数（纵向）
+
+dp_cost_collision: 1.0e+9 
+dp_cost_dl: 150.0
+dp_cost_ddl: 10.0
+dp_cost_dddl: 1.0
+dp_cost_ref: 50.0
+
+#QP Path cost
+qp_cost_l: 15.0
+qp_cost_dl: 150.0
+qp_cost_ddl: 10.0
+qp_cost_dddl: 1.0
+qp_cost_ref: 10.0
+qp_cost_end_l: 0.0
+qp_cost_end_dl: 0.0
+qp_cost_end_ddl: 0.0
+
+
+#########速度规划相关############
+#TO- DO

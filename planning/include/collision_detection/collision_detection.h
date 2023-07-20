@@ -21,6 +21,8 @@
 #include <ros/ros.h>
 #include "point_types.h"
 #include "reference_line/reference_line.h"
+#include "common.h"
+
 
 namespace carla_pnc
 {
@@ -28,10 +30,10 @@ namespace carla_pnc
     class Obstacle
     {
     public:
-        car_state point;
+        FrenetPoint point;
         double x_rad;                         // x方向半径
         double y_rad;                         // y方向半径
-        std::vector<car_state> collision_box; // 碰撞BOX，用8个点表示(4个顶点+4条边的中点)
+        std::vector<FrenetPoint> collision_box; // 碰撞BOX，用8个点表示(4个顶点+4条边的中点)
     };
 
     class CollisionDetection
@@ -41,12 +43,14 @@ namespace carla_pnc
         std::vector<Obstacle> detected_objects;
         std::vector<Obstacle> static_obstacle_list;
         std::vector<Obstacle> dynamic_obstacle_list;
-        
+        std::vector<path_point> ref_path; //参考线
+
         CollisionDetection() = default;
         
         CollisionDetection(const std::vector<Obstacle> &detected_objects,
-                           const double &collision_distance);
-
+                           const double &collision_distance,
+                           const std::vector<path_point> &ref_path);
+        
         void obstacle_classification(std::vector<Obstacle> &detected_objects);
 
         void cal_collision_box(Obstacle &object);

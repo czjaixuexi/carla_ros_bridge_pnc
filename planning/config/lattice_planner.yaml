@@ -1,5 +1,4 @@
 #Lattice Planner 路径采样相关参数
-
 sample_max_time: 4.0 # 最大采样时间
 sample_min_time: 2.5  #最小采样时间
 sample_time_step: 0.5 # 采样时间step

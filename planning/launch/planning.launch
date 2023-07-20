@@ -8,12 +8,15 @@
   <!-- <arg name="town" default='Town03'/> -->
   <!-- <arg name="town" default='Town01'/> -->
   <arg name="planner_activate" default='true'/>
+  <arg name="planning_method" default='Lattice'/><!-- "EM", "Lattice" -->
   
   <node pkg="planning" type="planning" name="planning" output="screen">
     <param name="role_name" type="string" value="$(arg role_name)" />
     <param name="path_length" type="double" value="$(arg path_length)" />
     <rosparam command="load" file="$(find planning)/config/lattice_planner.yaml"/>
-
+    <rosparam command="load" file="$(find planning)/config/reference_line.yaml"/>
+    <rosparam command="load" file="$(find planning)/config/em_planner.yaml"/>
+    <param name="planning_method" value="$(arg planning_method)" />
     <param name="planner_activate" type="bool" value="$(arg planner_activate)" />
   </node>
 

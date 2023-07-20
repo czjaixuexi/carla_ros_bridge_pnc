@@ -88,7 +88,8 @@ namespace carla_pnc
   Controller::Controller(const std::string &lat_control_method,
                          const double &k_pure, const double &k_cte,
                          const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R,
-                         const double &kp, const double &ki, const double &kd)
+                         const double &kp, const double &ki, const double &kd,
+                         std::vector<Eigen::Matrix<double, 1, 4>> &lqr_k_table)
   {
     this->lat_control_method = lat_control_method;
     this->first_loop = true;
@@ -124,6 +125,7 @@ namespace carla_pnc
     // R矩阵
     this->R = R;
 
+    this->lqr_k_table = lqr_k_table;
     /***********************************纵向PID控制参数**************************************/
 
     this->sum_pid_error = 0.0; // PID累计误差
@@ -367,66 +369,66 @@ namespace carla_pnc
     return err;
   }
 
-  /**
-   * @brief 求解离散LQR矩阵
-   *
-   * @param vx x方向速度
-   * @return Eigen::Matrix<double, 1, 4>
-   */
-  Eigen::Matrix<double, 1, 4> Controller::cal_dlqr(double vx)
-  {
-    vx = vx + 0.0001; // 防止速度为0时相除出错
-    // A矩阵
-    /*
-    A matrix (Gear Drive)
-    [0.0,                             1.0,                           0.0,                                            0.0;
-     0.0,          (cf + cr) / (mass * vx),            -(cf + cr) / mass,              (lf * cf - lr * cr) / (mass * vx);
-     0.0,                             0.0,                           0.0,                                            1.0;
-     0.0, (lf * cf - lr * cr) / (Iz * vx),     -(lf * cf - lr * cr) / Iz,       (lf * lf * cf + lr * lr * cr) / (Iz * vx);]
-    */
-    Eigen::Matrix4d A;
-    A << 0.0, 1.0, 0.0, 0.0,
-        0.0, (cf + cr) / (mass * vx), -(cf + cr) / mass, (lf * cf - lr * cr) / (mass * vx),
-        0.0, 0.0, 0.0, 1.0,
-        0.0, (lf * cf - lr * cr) / (Iz * vx), -(lf * cf - lr * cr) / Iz, (lf * lf * cf + lr * lr * cr) / (Iz * vx);
+  // /**
+  //  * @brief 求解离散LQR矩阵
+  //  *
+  //  * @param vx x方向速度
+  //  * @return Eigen::Matrix<double, 1, 4>
+  //  */
+  // Eigen::Matrix<double, 1, 4> Controller::cal_dlqr(double vx)
+  // {
+  //   vx = vx + 0.0001; // 防止速度为0时相除出错
+  //   // A矩阵
+  //   /*
+  //   A matrix (Gear Drive)
+  //   [0.0,                             1.0,                           0.0,                                            0.0;
+  //    0.0,          (cf + cr) / (mass * vx),            -(cf + cr) / mass,              (lf * cf - lr * cr) / (mass * vx);
+  //    0.0,                             0.0,                           0.0,                                            1.0;
+  //    0.0, (lf * cf - lr * cr) / (Iz * vx),     -(lf * cf - lr * cr) / Iz,       (lf * lf * cf + lr * lr * cr) / (Iz * vx);]
+  //   */
+  //   Eigen::Matrix4d A;
+  //   A << 0.0, 1.0, 0.0, 0.0,
+  //       0.0, (cf + cr) / (mass * vx), -(cf + cr) / mass, (lf * cf - lr * cr) / (mass * vx),
+  //       0.0, 0.0, 0.0, 1.0,
+  //       0.0, (lf * cf - lr * cr) / (Iz * vx), -(lf * cf - lr * cr) / Iz, (lf * lf * cf + lr * lr * cr) / (Iz * vx);
 
-    // B矩阵 ：B = [0.0, -cf / mass, 0.0, -lf * cf / Iz]^T
+  //   // B矩阵 ：B = [0.0, -cf / mass, 0.0, -lf * cf / Iz]^T
 
-    Eigen::Matrix<double, 4, 1> B;
-    B << 0.0, -cf / mass, 0.0, -lf * cf / Iz;
+  //   Eigen::Matrix<double, 4, 1> B;
+  //   B << 0.0, -cf / mass, 0.0, -lf * cf / Iz;
 
-    /***********************************离散化状态方程**************************************/
-    double ts = 0.001;
-    // 单位矩阵
-    Eigen::Matrix4d eye;
-    eye.setIdentity(4, 4);
-    // 离散化A,B矩阵
-    Eigen::Matrix4d Ad;
-    Ad = (eye - ts * 0.5 * A).inverse() * (eye + ts * 0.5 * A);
-    Eigen::Matrix<double, 4, 1> Bd;
-    Bd = B * ts;
+  //   /***********************************离散化状态方程**************************************/
+  //   double ts = 0.02;
+  //   // 单位矩阵
+  //   Eigen::Matrix4d eye;
+  //   eye.setIdentity(4, 4);
+  //   // 离散化A,B矩阵
+  //   Eigen::Matrix4d Ad;
+  //   Ad = (eye - ts * 0.5 * A).inverse() * (eye + ts * 0.5 * A);
+  //   Eigen::Matrix<double, 4, 1> Bd;
+  //   Bd = B * ts;
 
-    /***********************************求解Riccati方程**************************************/
-    int max_iteration = 100; // 设置最大迭代次数
-    int tolerance = 0.001;   // 迭代求解精度
+  //   /***********************************求解Riccati方程**************************************/
+  //   int max_iteration = 100; // 设置最大迭代次数
+  //   int tolerance = 0.001;   // 迭代求解精度
 
-    Eigen::Matrix4d P = Q;
-    Eigen::Matrix4d P_next;
-    for (int i = 0; i < max_iteration; i++)
-    {
-      P_next = Ad.transpose() * P * Ad -
-               Ad.transpose() * P * Bd * (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad + Q;
-      P = P_next;
-      if (fabs((P_next - P).maxCoeff()) < tolerance)
-      {
-        break;
-      }
-    }
-    // 求解k值
-    Eigen::Matrix<double, 1, 4> k;
-    k = (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad;
-    return k;
-  }
+  //   Eigen::Matrix4d P = Q;
+  //   Eigen::Matrix4d P_next;
+  //   for (int i = 0; i < max_iteration; i++)
+  //   {
+  //     P_next = Ad.transpose() * P * Ad -
+  //              Ad.transpose() * P * Bd * (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad + Q;
+  //     P = P_next;
+  //     if (fabs((P_next - P).maxCoeff()) < tolerance)
+  //     {
+  //       break;
+  //     }
+  //   }
+  //   // 求解k值
+  //   Eigen::Matrix<double, 1, 4> k;
+  //   k = (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad;
+  //   return k;
+  // }
 
   /**
    * @brief 计算前馈控制转角
@@ -464,11 +466,11 @@ namespace carla_pnc
     if (lat_control_method == "PurePursuit")
     {
       // pure pursuit的预瞄距离
-      double lookahead_dist = k_pure * this->cur_pose.v;
+      double lookahead_dist = k_pure * cur_pose.vx;
 
-      int target_index = search_lookahead_index(this->cur_pose, this->waypoints, lookahead_dist);
+      int target_index = search_lookahead_index(cur_pose, waypoints, lookahead_dist);
 
-      double alpha = std::atan2(waypoints[target_index].y - this->cur_pose.y, this->waypoints[target_index].x - this->cur_pose.y) - this->cur_pose.yaw;
+      double alpha = atan2(waypoints[target_index].y - cur_pose.y, waypoints[target_index].x - cur_pose.x) - (cur_pose.yaw);
 
       if (isnan(alpha))
       {
@@ -478,8 +480,7 @@ namespace carla_pnc
       {
         previous["alpha"] = alpha;
       }
-
-      steering = atan((2 * this->L * sin(alpha)) / lookahead_dist);
+      steering = atan((2 * L * sin(alpha)) / lookahead_dist) / 2.0;
     }
     else if (lat_control_method == "Stanley")
     {
@@ -500,18 +501,25 @@ namespace carla_pnc
       // 计算横向误差
       Eigen::Matrix<double, 4, 1> err = cal_lqr_error(this->cur_pose, target_index, this->waypoints);
 
-      // 求解LQR k值
-      Eigen::Matrix<double, 1, 4> k = cal_dlqr(this->cur_pose.vx);
+      // // 求解LQR k值
+      // Eigen::Matrix<double, 1, 4> k = cal_dlqr(this->cur_pose.vx);
 
-      // 计算前馈转角
-      double forward_angle = cal_forward_angle(k, this->waypoints[target_index].cur, this->cur_pose.vx);
+      // 查表获取LQR k值
+      if (cur_pose.vx < 1e-6)
+      {
+        steering = 0;
+      }
+      else
+      {
+        int index = static_cast<int>(cur_pose.vx / 0.2);
+        Eigen::Matrix<double, 1, 4> k = lqr_k_table[index];
+        // 计算前馈转角
+        double forward_angle = cal_forward_angle(k, this->waypoints[target_index].cur, this->cur_pose.vx);
 
-      steering = forward_angle - k * err;
-      // printf("当前位置x:%.3f,y:%x,yaw:%.3f\n",cur_pose.x,cur_pose.y,cur_pose.yaw);
-      // printf("目标位置x:%.3f,y:%y,yaw:%.3f\n",this->waypoints[target_index].x,this->waypoints[target_index].y,
+        steering = forward_angle - k * err;
+      }
+
       // this->waypoints[target_index].yaw);
-
-      // printf("反馈控制:%.f,前馈控制：%.3f\n", -k * err, forward_angle);
     }
 
     else
@@ -647,10 +655,10 @@ namespace carla_pnc
       set_brake(brake_output);       // (0 to 1)
 
       // 存储上一个周期的值
-      previous["v"] = this->cur_pose.v;
+      previous["v"] = this->cur_pose.vx;
       previous["t"] = this->cur_time;
     }
-    
+
     first_loop = false;
   }
 } // carla_pnc

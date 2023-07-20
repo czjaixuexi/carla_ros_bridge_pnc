@@ -30,7 +30,7 @@
 
 Global planner: A* (carla_ros_bridge 自带) 
 
-Local planner: Lattice Planner
+Local planner: Lattice Planner、EM Planner
 
 ![lp2-16872379376268](figure/lp2.gif)
 
@@ -155,10 +155,20 @@ cd path/to/carla/root
 
 **终端2：启动Planning结点**
 
-```bash
+```
 source devel/setup.bash
+```
 
-roslaunch planning planning_demo.launch
+Lattice Planner
+
+```bash
+roslaunch planning planning_demo.launch planning_method:="Lattice"
+```
+
+EM Planner
+
+```
+roslaunch planning planning_demo.launch planning_method:="EM"
 ```
 
 
@@ -168,7 +178,8 @@ roslaunch planning planning_demo.launch
 scenario_runner-0.9.11目录下
 
 ```bash
-python scenario_runner.py --scenario Avoid_and_Follow_1 --waitForEgo
+python scenario_runner.py --scenario Avoid_and_Follow_1 --waitForEgo   #用于Lattice Planner
+python scenario_runner.py --scenario Avoid_1 --waitForEgo			   #用于EM Planner
 ```
 
 
@@ -186,7 +197,7 @@ roslaunch controller controller.launch
 ## To-Do-List
 
 - MPC的实现
-- EM planner的实现
+- EM planner速度规划
 - local planner应用场景的泛化
 
 
@@ -198,4 +209,8 @@ roslaunch controller controller.launch
 [Casper Auto](https://github.com/casper-auto)
 
 [Optimal Trajectory Generation for Dynamic Street Scenarios in a Frenet Frame](https://www.researchgate.net/publication/224156269_Optimal_Trajectory_Generation_for_Dynamic_Street_Scenarios_in_a_Frenet_Frame)
+
+[driving planning](https://github.com/zhaokun506/driving-planning)
+
+[B站老王](https://github.com/VincentWong3/automatic-driving-decision-and-planning-for-matlab)
 

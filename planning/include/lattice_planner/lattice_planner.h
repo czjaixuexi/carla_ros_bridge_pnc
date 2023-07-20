@@ -16,7 +16,7 @@
 #include <limits>
 #include <vector>
 #include <queue>
-
+#include <unordered_map>
 #include <ros/ros.h>
 
 #include "reference_line/cubic_spline.hpp"
@@ -28,9 +28,9 @@
 
 namespace carla_pnc
 {
-    // Cartesian转Frenet
-    FrenetPoint Cartesian2Frenet(const car_state &global_point,
-                                 const path_point &projection_point);
+    // // Cartesian转Frenet
+    // FrenetPoint Cartesian2Frenet(const car_state &global_point,
+    //                              const path_point &projection_point);
 
 
     class cmp
@@ -68,10 +68,7 @@ namespace carla_pnc
 
         LatticePlanner() = default;
 
-        LatticePlanner(const double &sample_max_time, const double &sample_min_time, const double &sample_time_step,
-                       const double &sample_lat_width, const double &sample_width_length,
-                       const double &w_object, const double &w_lon_jerk,
-                       const double &w_lat_offset, const double &w_lat_acc,
+        LatticePlanner(std::unordered_map<std::string, double> &lattice_params,
                        const double &cruise_speed,
                        const CollisionDetection &collision_detection);
 

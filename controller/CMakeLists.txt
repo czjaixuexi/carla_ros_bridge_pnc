@@ -44,5 +44,5 @@ target_link_libraries(controller
 add_dependencies(controller
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
-  ${EIGEN_DEFINITIONS}
+  ${EIGEN3_DEFINITIONS}
 )

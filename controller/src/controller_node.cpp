@@ -52,7 +52,7 @@ namespace carla_pnc
    */
   void ControllerNode::MainLoop()
   {
-    double frequency = 100.0;
+    double frequency = 50.0;
     ros::Rate rate(frequency);
     std::vector<double> prev_p(2);
 
@@ -66,11 +66,15 @@ namespace carla_pnc
     // R矩阵
     Eigen::Matrix<double, 1, 1> R;
     R(0, 0) = R_value;
+    if(control_method == "LQR")
+    {
+     CreateLqrOffline(Q,R);}
 
     carla_pnc::Controller mc(control_method,
                              k_pure, k_cte,
                              Q, R,
-                             kp, ki, kd);
+                             kp, ki, kd,
+                             lqr_k_table);
     vector<double> cmd(3);
     vector<double> pre_cmd(3);
     while (ros::ok())
@@ -122,6 +126,81 @@ namespace carla_pnc
       rate.sleep();
 
       // ROS_INFO("The iteration end.");
+    }
+  }
+
+  /**
+   * @brief 求解离散LQR矩阵
+   *
+   * @param vx 纵向速度
+   * @return Eigen::Matrix<double, 1, 4>
+   */
+  Eigen::Matrix<double, 1, 4> ControllerNode::calc_dlqr(double vx,const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R)
+  {
+    vx = vx + 0.00001; // 防止速度为0时相除出错
+    // A矩阵
+    /*
+    A matrix (Gear Drive)
+    [0.0,                             1.0,                           0.0,                                            0.0;
+     0.0,          (cf + cr) / (mass * vx),            -(cf + cr) / mass,              (lf * cf - lr * cr) / (mass * vx);
+     0.0,                             0.0,                           0.0,                                            1.0;
+     0.0, (lf * cf - lr * cr) / (Iz * vx),     -(lf * cf - lr * cr) / Iz,       (lf * lf * cf + lr * lr * cr) / (Iz * vx);]
+    */
+    Eigen::Matrix4d A;
+    A << 0.0, 1.0, 0.0, 0.0,
+        0.0, (cf + cr) / (mass * vx), -(cf + cr) / mass, (lf * cf - lr * cr) / (mass * vx),
+        0.0, 0.0, 0.0, 1.0,
+        0.0, (lf * cf - lr * cr) / (Iz * vx), -(lf * cf - lr * cr) / Iz, (lf * lf * cf + lr * lr * cr) / (Iz * vx);
+
+    // B矩阵 ：B = [0.0, -cf / mass, 0.0, -lf * cf / Iz]^T
+
+    Eigen::Matrix<double, 4, 1> B;
+    B << 0.0, -cf / mass, 0.0, -lf * cf / Iz;
+
+    /***********************************离散化状态方程**************************************/
+    double ts = 0.01;
+    // 单位矩阵
+    Eigen::Matrix4d eye;
+    eye.setIdentity(4, 4);
+    // 离散化A,B矩阵
+    Eigen::Matrix4d Ad;
+    Ad = (eye - ts * 0.5 * A).inverse() * (eye + ts * 0.5 * A);
+    Eigen::Matrix<double, 4, 1> Bd;
+    Bd = B * ts;
+
+    /***********************************求解Riccati方程**************************************/
+    int max_iteration = 100; // 设置最大迭代次数
+    int tolerance = 0.001;   // 迭代求解精度
+
+    Eigen::Matrix4d P = Q;
+    Eigen::Matrix4d P_next;
+    for (int i = 0; i < max_iteration; i++)
+    {
+      P_next = Ad.transpose() * P * Ad -
+               Ad.transpose() * P * Bd * (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad + Q;
+      P = P_next;
+      if (fabs((P_next - P).maxCoeff()) < tolerance)
+      {
+        break;
+      }
+    }
+    // 求解k值
+    Eigen::Matrix<double, 1, 4> k;
+    k = (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad;
+    return k;
+  }
+
+  /**
+   * @brief 离线求解LQR表
+   *
+   * @param vx
+   */
+  void ControllerNode::CreateLqrOffline(const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R)
+  {
+    lqr_k_table.clear();
+    for (double v = 0; v < 30.0; v += 0.2)
+    {
+      lqr_k_table.push_back(calc_dlqr(v,Q,R));
     }
   }
 

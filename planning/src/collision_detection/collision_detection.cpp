@@ -19,18 +19,20 @@ namespace carla_pnc
      * @param detected_objects
      * @param collision_distance
      */
-    CollisionDetection::CollisionDetection(const std::vector<Obstacle>  &detected_objects,
-                                           const double &collision_distance)
+    CollisionDetection::CollisionDetection(const std::vector<Obstacle> &detected_objects,
+                                           const double &collision_distance,
+                                           const std::vector<path_point> &ref_path)
     {
         this->detected_objects = detected_objects;
         this->collision_distance = collision_distance;
+        this->ref_path = ref_path;
         static_obstacle_list.clear();
         dynamic_obstacle_list.clear();
         obstacle_classification(this->detected_objects);
     }
 
     /**
-     * @brief 计算障碍物碰撞BOX，并分类（动态/静态）
+     * @brief 计算障碍物碰撞BOX，并分类（动态/静态），并将获得静态障碍物的sl坐标
      *
      * @param detected_objects
      */
@@ -43,10 +45,21 @@ namespace carla_pnc
             // ROS_INFO("Get collision_box successfully");
             if (obstacle.point.v > 0.2)
             {
+                // for (auto &box_point : obstacle.collision_box)
+                // {
+                //     box_point = calc_frenet(box_point, ref_path);
+                // }
                 dynamic_obstacle_list.push_back(obstacle);
             }
             else
-            {
+            { // 将静态障碍物投影到sl图中
+                obstacle.point = calc_frenet(obstacle.point, ref_path);
+                // ROS_INFO("The obstacle,s:%.2f,l:%.2f",obstacle.point.s,obstacle.point.l);
+                // ROS_INFO("The obstacle,x:%.2f,y:%.2f",obstacle.point.x,obstacle.point.y);
+                for (auto &box_point : obstacle.collision_box)
+                {
+                    box_point = calc_frenet(box_point, ref_path);
+                }
                 static_obstacle_list.push_back(obstacle);
             }
         }
@@ -59,7 +72,7 @@ namespace carla_pnc
      */
     void CollisionDetection::cal_collision_box(Obstacle &obstacle)
     {
-        vector<car_state> collision_box(8);
+        vector<FrenetPoint> collision_box(8);
         double x = obstacle.point.x;
         double y = obstacle.point.y;
         double yaw = obstacle.point.yaw;
@@ -121,25 +134,25 @@ namespace carla_pnc
     {
         // 遍历每个障碍物
         for (Obstacle obstacle : detected_objects)
-        {   
+        {
             // ROS_INFO("Obstacle point x:%.2f,y:%.2f",obstacle.point.x,obstacle.point.y);
 
             // 遍历box中的每个点
-            for (car_state box_point : obstacle.collision_box)
-            {   
+            for (auto box_point : obstacle.collision_box)
+            {
                 // ROS_INFO("box point x:%.2f, y:%.2f",box_point.x,box_point.y);
                 // 遍历路径上的每个点
                 for (unsigned int i = 0; i < path.size_; i++)
                 {
                     double dist = cal_distance(path.frenet_path[i].x, path.frenet_path[i].y,
                                                box_point.x, box_point.y);
-                    
+
                     // 计算碰撞cost (不计算跟车目标的碰撞cost)
                     if (dist < 3.5 &&
                         !(car_following && cal_distance(obstacle.point.x, obstacle.point.y, leader_point.x, leader_point.y) < 2.0))
-                    {   
+                    {
 
-                        path.cost += dist/3.0;
+                        path.cost += dist / 3.0;
                     };
 
                     if (dist <= collision_distance)

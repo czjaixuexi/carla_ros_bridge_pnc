@@ -6,9 +6,9 @@ k_cte: 10.0  #Stanley"增益系数
 #LQR Q R矩阵参数
 Q_ed: 30.0
 Q_ed_dot: 0.01
-Q_ephi: 1.0
+Q_ephi: 10.0
 Q_ephi_dot: 0.01
-R_value: 20.0
+R_value: 40.0
 
 #纵向控制PID
 kp: 0.5

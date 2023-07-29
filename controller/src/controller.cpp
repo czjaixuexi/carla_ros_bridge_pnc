@@ -87,9 +87,9 @@ namespace carla_pnc
    */
   Controller::Controller(const std::string &lat_control_method,
                          const double &k_pure, const double &k_cte,
-                         const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R,
+                         const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R,
                          const double &kp, const double &ki, const double &kd,
-                         std::vector<Eigen::Matrix<double, 1, 4>> &lqr_k_table)
+                         std::vector<Eigen::MatrixXd> &lqr_k_table)
   {
     this->lat_control_method = lat_control_method;
     this->first_loop = true;
@@ -213,7 +213,7 @@ namespace carla_pnc
       }
       waypoints[i].yaw = std::atan2(y_delta, x_delta);
       //  参数方程曲率计算
-      waypoints[i].cur = std::abs(y_delta_2 * x_delta - x_delta_2 * y_delta) / std::pow((x_delta * x_delta + y_delta * y_delta), 3 / 2);
+      waypoints[i].cur = (y_delta_2 * x_delta - x_delta_2 * y_delta) / std::pow((x_delta * x_delta + y_delta * y_delta), 3 / 2);
     }
   }
 
@@ -299,6 +299,7 @@ namespace carla_pnc
                                        const double &target_index)
   {
     double heading_error = waypoints[target_index].yaw - cur_yaw;
+    normalize_angle(heading_error);
     return heading_error;
   }
 
@@ -313,6 +314,7 @@ namespace carla_pnc
                                            const double &e_y)
   {
     double cte_heading_error = atan2(k_cte * e_y, cur_speed);
+    normalize_angle(cte_heading_error);
     return cte_heading_error;
   }
 
@@ -431,6 +433,51 @@ namespace carla_pnc
   // }
 
   /**
+   * @brief 求解离散LQR矩阵（动力学）
+   *
+   * @param vx
+   * @param target_index
+   * @return Eigen::MatrixXd
+   */
+  Eigen::MatrixXd Controller::cal_dlqr(const double &vx, const int &target_index)
+  {
+    /***********************************离散状态方程**************************************/
+    double dt = 0.01;
+    Eigen::MatrixXd Ad(3, 3), Bd(3, 2);
+
+    double ref_yaw = this->waypoints[target_index].yaw;
+    double ref_delta = atan2(L * this->waypoints[target_index].cur, 1);
+
+    Ad << 1.0, 0.0, -vx * dt * sin(ref_yaw),
+        0.0, 1.0, vx * dt * cos(ref_yaw),
+        0.0, 0.0, 1.0;
+
+    Bd << dt * cos(ref_yaw), 0,
+        dt * sin(ref_yaw), 0,
+        dt * tan(ref_delta) / L, vx * dt / (L * cos(ref_delta) * cos(ref_delta));
+
+    /***********************************求解Riccati方程**************************************/
+    int max_iteration = 100; // 设置最大迭代次数
+    int tolerance = 0.001;   // 迭代求解精度
+
+    Eigen::MatrixXd P = Q;
+    Eigen::MatrixXd P_next;
+    for (int i = 0; i < max_iteration; i++)
+    {
+      P_next = Ad.transpose() * P * Ad -
+               Ad.transpose() * P * Bd * (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad + Q;
+      if (fabs((P_next - P).maxCoeff()) < tolerance)
+      {
+        break;
+      }
+      P = P_next;
+    }
+    // 求解k值
+    Eigen::MatrixXd k = (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad;
+    return k;
+  }
+
+  /**
    * @brief 计算前馈控制转角
    *
    * @param k 求解dlar得到的k
@@ -492,9 +539,9 @@ namespace carla_pnc
 
       // ROS_INFO("cte_error: %2f, heading_error: %2f", cte_heading_error, cte_heading_error);
 
-      steering = heading_error + 2.0 * cte_heading_error;
+      steering = heading_error +  cte_heading_error;
     }
-    else if (lat_control_method == "LQR")
+    else if (lat_control_method == "LQR_dynamics")
     {
       int target_index = search_closest_index(this->cur_pose, this->waypoints);
 
@@ -515,11 +562,30 @@ namespace carla_pnc
         Eigen::Matrix<double, 1, 4> k = lqr_k_table[index];
         // 计算前馈转角
         double forward_angle = cal_forward_angle(k, this->waypoints[target_index].cur, this->cur_pose.vx);
-
+        normalize_angle(forward_angle);
         steering = forward_angle - k * err;
       }
 
       // this->waypoints[target_index].yaw);
+    }
+    else if (lat_control_method == "LQR_kinematics")
+    {
+      int target_index = search_closest_index(this->cur_pose, this->waypoints);
+      // 误差
+      Eigen::Matrix<double, 3, 1> err;
+      double yaw_err = this->cur_pose.yaw - this->waypoints[target_index].yaw;
+
+      err << this->cur_pose.x - this->waypoints[target_index].x,
+          this->cur_pose.y - this->waypoints[target_index].y,
+          normalize_angle(yaw_err);
+      Eigen::MatrixXd k = cal_dlqr(this->desired_speed, target_index);
+      Eigen::MatrixXd u = -k * err;
+    // std::cout<< Q <<std::endl;
+    // std::cout << R << std::endl;
+    // std::cout << k << std::endl;
+    // std::cout << u << std::endl;
+      steering = u(1, 0) + atan2(L * this->waypoints[target_index].cur, 1);
+
     }
 
     else

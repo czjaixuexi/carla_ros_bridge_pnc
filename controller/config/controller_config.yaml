@@ -3,12 +3,19 @@ k_pure: 0.5 # PurePursuit"增益系数
 k_cte: 10.0  #Stanley"增益系数
 
 
-#LQR Q R矩阵参数
-Q_ed: 30.0
-Q_ed_dot: 0.01
+#LQR_dynamics Q R矩阵参数
+Q_ed: 20.0
+Q_ed_dot: 1.0
 Q_ephi: 10.0
-Q_ephi_dot: 0.01
+Q_ephi_dot: 1.0
 R_value: 40.0
+
+#LQR_kinematics Q R矩阵参数
+Q_ex_k: 2.0
+Q_ed_k: 2.0
+Q_ephi_k: 2.0
+R_value_k: 15.0
+
 
 #纵向控制PID
 kp: 0.5

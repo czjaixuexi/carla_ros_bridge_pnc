@@ -8,7 +8,7 @@
   <!-- <arg name="town" default='Town03'/> -->
   <!-- <arg name="town" default='Town01'/> -->
   <arg name="planner_activate" default='true'/>
-  <arg name="planning_method" default='Lattice'/><!-- "EM", "Lattice" -->
+  <arg name="planning_method" default='EM'/><!-- "EM", "Lattice" -->
   
   <node pkg="planning" type="planning" name="planning" output="screen">
     <param name="role_name" type="string" value="$(arg role_name)" />

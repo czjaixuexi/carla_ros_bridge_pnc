@@ -68,12 +68,12 @@ namespace carla_pnc
     double lr;         // 后轴中心到质心的距离
     double Iz;         // 车辆绕z轴转动的转动惯量
     double max_degree; // 最大前轮转向角(度)
-
+    Controller() = default;
     Controller(const std::string &lat_control_method,
                const double &k_pure, const double &k_cte,
-               const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R,
+               const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R,
                const double &kp, const double &ki, const double &kd,
-               std::vector<Eigen::Matrix<double, 1, 4>> &lqr_k_table);
+               std::vector<Eigen::MatrixXd> &lqr_k_table);
 
     void update_car_state(const car_state &cur_pose,
                           const double &timestamp);
@@ -106,15 +106,15 @@ namespace carla_pnc
     bool first_loop;                                      // 判断是否为第一次循环
     std::vector<car_state> waypoints;                     // 局部路径信息 x,y, x方向速度
     std::vector<double> commands;                         // throttle, steer, brake
-    std::vector<Eigen::Matrix<double, 1, 4>> lqr_k_table; // LQR离线求解后的k
+    std::vector<Eigen::MatrixXd> lqr_k_table; // LQR离线求解后的k
     /***********************************横向控制参数**************************************/
     double k_pure;           // purepursuit前视距离系数
     double k_cte;            // Stanley 增益系数
     int closest_index;       // 最近匹配点下标
     double closest_distance; // 与最近匹配点的距离
 
-    Eigen::Matrix4d Q;             // Q矩阵
-    Eigen::Matrix<double, 1, 1> R; // R矩阵
+    Eigen::MatrixXd Q; // Q矩阵
+    Eigen::MatrixXd R; // R矩阵
 
     /***********************************纵向PID参数**************************************/
     double sum_pid_error; // pid累计误差
@@ -145,9 +145,12 @@ namespace carla_pnc
 
     Eigen::Matrix<double, 4, 1> cal_lqr_error(const car_state &cur_pose,
                                               const double &target_index,
-                                              const std::vector<car_state> &waypoints);
+                                              const std::vector<car_state> &waypoints); //动力学
+    
 
-    // Eigen::Matrix<double, 1, 4> cal_dlqr(double vx);
+
+    // Eigen::Matrix<double, 1, 4> cal_dlqr(double vx); 
+    Eigen::MatrixXd cal_dlqr(const double &vx, const int &target_index); //运动学
 
     double cal_forward_angle(const Eigen::Matrix<double, 1, 4> &k,
                              const double &cur,

@@ -139,11 +139,11 @@ namespace carla_pnc
 
         ros::Publisher local_waypoints_pub; // 发布给控制器的局部路径点信息
         ros::Publisher ref_path_pub;        // 参考线可视化
-        ros::Publisher sample_paths_pub;    // 发布采样轨迹，用于rivz可视化
-        ros::Publisher final_path_pub;      // 发布最优轨迹，用于rivz可视化
-        ros::Publisher history_paths_pub;   // 发布历史参考路径，用于rivz可视化
+        ros::Publisher sample_paths_pub;    // 发布采样轨迹，用于rviz可视化
+        ros::Publisher final_path_pub;      // 发布最优轨迹，用于rviz可视化
+        ros::Publisher history_paths_pub;   // 发布历史参考路径，用于rviz可视化
 
-        ros::Publisher speed_marker_pub; // 发布目标速度，用于rivz可视化
+        ros::Publisher speed_marker_pub; // 发布目标速度，用于rviz可视化
         /***********************************callback**************************************/
 
         void callbackCarlaOdom(const nav_msgs::Odometry::ConstPtr &msg);

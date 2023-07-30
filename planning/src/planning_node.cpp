@@ -322,8 +322,8 @@ namespace carla_pnc
                             double vx = cur_pose.vx * cos(cur_pose.yaw) - cur_pose.vy * sin(cur_pose.yaw);
                             double vy = cur_pose.vy * sin(cur_pose.yaw) + cur_pose.vy * cos(cur_pose.yaw);
 
-                            next_pose.x = cur_pose.x + vx * dt + 0.5 * vx * dt * dt;
-                            next_pose.y = cur_pose.y + vy * dt + 0.5 * vy * dt * dt;
+                            next_pose.x = cur_pose.x + vx * dt + 0.5 * ax * dt * dt;
+                            next_pose.y = cur_pose.y + vy * dt + 0.5 * ay * dt * dt;
 
                             next_pose.vx = cur_pose.vx + cur_pose.ax * dt;
                             next_pose.vy = cur_pose.vy + cur_pose.ay * dt;

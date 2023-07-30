@@ -2,7 +2,8 @@
 <launch>
   <!-- <param name="/use_sim_time" value="true" /> -->
   <arg name="role_name" default="ego_vehicle" />
-  <arg name="control_method" default="Stanley" /> <!-- "PurePursuit", "Stanley", "LQR" -->
+  <arg name="control_method" default='LQR_kinematics'/><!-- "PurePursuit", "Stanley", "LQR_kinematics" "LQR_dynamics" -->
+
 
   <node pkg="controller" type="controller" name="controller" output="log">
     <param name="role_name" type="string" value="$(arg role_name)" />

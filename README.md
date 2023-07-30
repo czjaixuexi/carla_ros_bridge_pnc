@@ -83,7 +83,7 @@ cd scripts
 
 **手动配置方式：**
 
-```
+```bash
 1.创建src文件，放置功能包源码：
   mkdir -p ~/catkin_ws/src
 
@@ -97,6 +97,8 @@ cd scripts
 
 5.编译工作空间
   catkin build
+  
+  #catkin build -DCMAKE_BUILD_TYPE=Debug  #for debug
 ```
 
 
@@ -134,7 +136,8 @@ roslaunch controller controller_demo.launch control_method:="Stanley"
 LQR
 
 ```
-roslaunch controller controller_demo.launch control_method:="LQR"
+roslaunch controller controller_demo.launch control_method:="LQR_kinematics"
+roslaunch controller controller_demo.launch control_method:="LQR_dynamics"
 ```
 
 

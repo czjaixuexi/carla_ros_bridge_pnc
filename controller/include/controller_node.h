@@ -58,16 +58,17 @@ namespace carla_pnc
 
         ControllerNode();
         void MainLoop();
-        void CreateLqrOffline(const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R);
-        Eigen::Matrix<double, 1, 4> calc_dlqr(double vx,const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R);
+        void CreateLqrOffline(const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R);
+        Eigen::MatrixXd calc_dlqr(double vx, const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R);
 
     protected:
         std::string role_name, control_method;
-        std::vector<Eigen::Matrix<double, 1, 4>> lqr_k_table; // LQR离线求解后的k
-        double k_pure;                                        // PurePursuit"增益系数
-        double k_cte;                                         // Stanley"增益系数
-        double Q_ed, Q_ed_dot, Q_ephi, Q_ephi_dot, R_value;   // LQR Q R矩阵参数
-        double kp, ki, kd;                                    // 纵向PID
+        std::vector<Eigen::MatrixXd> lqr_k_table;           // LQR离线求解后的k
+        double k_pure;                                      // PurePursuit"增益系数
+        double k_cte;                                       // Stanley"增益系数
+        double Q_ed, Q_ed_dot, Q_ephi, Q_ephi_dot, R_value; // LQR_dynamics Q  R矩阵权重
+        double Q_ex_k, Q_ed_k, Q_ephi_k, R_value_k;         // LQR_kinematics Q  R矩阵权重
+        double kp, ki, kd;                                  // 纵向PID
 
         car_state cur_pose;                     // 车辆当前状态
         std::vector<car_state> local_waypoints; // 局部规划路径点

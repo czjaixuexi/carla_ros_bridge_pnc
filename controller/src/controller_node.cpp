@@ -28,12 +28,18 @@ namespace carla_pnc
     n.param<double>("ki", ki, 0.02);
     n.param<double>("kd", kd, 0.1);
 
-    // LQR Q  R矩阵权重
+    // LQR_dynamics Q  R矩阵权重
     n.param<double>("Q_ed", Q_ed, 67.0);
     n.param<double>("Q_ed_dot", Q_ed_dot, 1.0);
     n.param<double>("Q_ephi", Q_ephi, 70.0);
     n.param<double>("Q_ephi_dot", Q_ephi_dot, 1.0);
     n.param<double>("R_value", R_value, 35.0);
+
+    // LQR_kinematics Q  R矩阵权重
+    n.param<double>("Q_ex_k", Q_ex_k, 67.0);
+    n.param<double>("Q_ed_k", Q_ed_k, 67.0);
+    n.param<double>("Q_ephi_k", Q_ephi_k, 70.0);
+    n.param<double>("R_value_k", R_value_k, 35.0);
 
     // setup subscriber
     cur_pose_sub = n.subscribe("/carla/" + role_name + "/odometry", 10, &ControllerNode::callbackCarlaOdom, this);
@@ -56,19 +62,36 @@ namespace carla_pnc
     ros::Rate rate(frequency);
     std::vector<double> prev_p(2);
 
-    // Q矩阵
-    Eigen::Matrix4d Q;
-    Q(0, 0) = Q_ed;
-    Q(1, 1) = Q_ed_dot;
-    Q(2, 2) = Q_ephi;
-    Q(3, 3) = Q_ephi_dot;
+    Eigen::MatrixXd Q;
+    Eigen::MatrixXd R;
+    // 动力学
+    if (control_method == "LQR_dynamics")
+    { // Q矩阵
+      Q.setZero(4, 4);
+      Q(0, 0) = Q_ed;
+      Q(1, 1) = Q_ed_dot;
+      Q(2, 2) = Q_ephi;
+      Q(3, 3) = Q_ephi_dot;
 
-    // R矩阵
-    Eigen::Matrix<double, 1, 1> R;
-    R(0, 0) = R_value;
-    if(control_method == "LQR")
+      // R矩阵
+      R.setZero(1, 1);
+      R(0, 0) = R_value;
+      CreateLqrOffline(Q, R); // 离线LQR
+    }
+
+    // 运动学
+    // Q矩阵
+    if (control_method == "LQR_kinematics")
     {
-     CreateLqrOffline(Q,R);}
+      Q.setZero(3, 3);
+      Q(0, 0) = Q_ex_k;
+      Q(1, 1) = Q_ed_k;
+      Q(2, 2) = Q_ephi_k;
+
+      R.setZero(2, 2);
+      R(0, 0) = R_value_k;
+      R(1, 1) = R_value_k;
+    }
 
     carla_pnc::Controller mc(control_method,
                              k_pure, k_cte,
@@ -133,9 +156,9 @@ namespace carla_pnc
    * @brief 求解离散LQR矩阵
    *
    * @param vx 纵向速度
-   * @return Eigen::Matrix<double, 1, 4>
+   * @return Eigen::MatrixXd
    */
-  Eigen::Matrix<double, 1, 4> ControllerNode::calc_dlqr(double vx,const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R)
+  Eigen::MatrixXd ControllerNode::calc_dlqr(double vx, const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R)
   {
     vx = vx + 0.00001; // 防止速度为0时相除出错
     // A矩阵
@@ -178,14 +201,14 @@ namespace carla_pnc
     {
       P_next = Ad.transpose() * P * Ad -
                Ad.transpose() * P * Bd * (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad + Q;
-      P = P_next;
       if (fabs((P_next - P).maxCoeff()) < tolerance)
       {
         break;
       }
+      P = P_next;
     }
     // 求解k值
-    Eigen::Matrix<double, 1, 4> k;
+    Eigen::MatrixXd k;
     k = (R + Bd.transpose() * P * Bd).inverse() * Bd.transpose() * P * Ad;
     return k;
   }
@@ -195,12 +218,12 @@ namespace carla_pnc
    *
    * @param vx
    */
-  void ControllerNode::CreateLqrOffline(const Eigen::Matrix4d &Q, const Eigen::Matrix<double, 1, 1> &R)
+  void ControllerNode::CreateLqrOffline(const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R)
   {
     lqr_k_table.clear();
     for (double v = 0; v < 30.0; v += 0.2)
     {
-      lqr_k_table.push_back(calc_dlqr(v,Q,R));
+      lqr_k_table.push_back(calc_dlqr(v, Q, R));
     }
   }
 

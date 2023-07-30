@@ -10,7 +10,6 @@
   <!-- <arg name="town" default=''/> -->
   <arg name='synchronous_mode_wait_for_vehicle_control_command' default='True'/>
   <arg name='fixed_delta_seconds' default='0.02'/>
-
   <arg name="control_method" default='LQR_kinematics'/><!-- "PurePursuit", "Stanley", "LQR_kinematics" "LQR_dynamics" -->
   <arg name="planner_activate" default='false'/>
 
@@ -27,11 +26,6 @@
   <include file="$(find planning)/launch/planning.launch">
     <arg name="role_name" value="$(arg role_name)" />
     <arg name="planner_activate" value="$(arg planner_activate)" />
-  </include>
-
-  <include file="$(find controller)/launch/controller.launch">
-    <arg name="role_name" value="$(arg role_name)" />
-    <arg name="control_method" value="$(arg control_method)" />
   </include>
 
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find controller)/rviz/control.rviz"/>

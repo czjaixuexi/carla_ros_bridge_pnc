@@ -53,7 +53,8 @@ roslaunch controller controller_demo.launch control_method:="Stanley"
 LQR
 
 ```
-roslaunch controller controller_demo.launch control_method:="LQR"
+roslaunch controller controller_demo.launch control_method:="LQR_kinematics"
+roslaunch controller controller_demo.launch control_method:="LQR_dynamics"
 ```
 
 

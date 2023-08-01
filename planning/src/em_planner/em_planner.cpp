@@ -401,7 +401,7 @@ namespace carla_pnc
 
         // double lf = 2.0;    // 质心到车辆前端距离
         // double lr = 2.0;    // 质心到车辆后端距离
-        double width = 3.6; // 车宽
+        double width = 3.6; // 车宽(做了冗余)
 
         // Hissen矩阵 H
         Eigen::SparseMatrix<double> H(3 * n, 3 * n);

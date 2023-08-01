@@ -33,6 +33,5 @@
 
   
   <include file="$(find carla_waypoint_publisher)/launch/carla_waypoint_publisher.launch" />
-
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find planning)/rviz/planning.rviz"/>
 </launch>

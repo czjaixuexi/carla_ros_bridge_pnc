@@ -301,7 +301,7 @@ namespace carla_pnc
                         car_state global_initial_point; // 全局坐标系下的规划起始点
 
                         // 若是第一次运行，或上个周期规划轨迹不存在，则用车辆则用车辆当前位置作为本周期的规划起点，
-                        if (first_loop || pre_final_path.frenet_path.size() < 5)
+                        if (first_loop || pre_final_path.frenet_path.size() < 5 )
                         {
                             global_initial_point = cur_pose;
                             first_loop = false;
@@ -320,10 +320,13 @@ namespace carla_pnc
 
                             // 车身速度转全局速度
                             double vx = cur_pose.vx * cos(cur_pose.yaw) - cur_pose.vy * sin(cur_pose.yaw);
-                            double vy = cur_pose.vy * sin(cur_pose.yaw) + cur_pose.vy * cos(cur_pose.yaw);
+                            double vy = cur_pose.vx * sin(cur_pose.yaw) + cur_pose.vy * cos(cur_pose.yaw);
 
-                            next_pose.x = cur_pose.x + vx * dt + 0.5 * cur_pose.ax * dt * dt;
-                            next_pose.y = cur_pose.y + vy * dt + 0.5 * cur_pose.ay * dt * dt;
+                            double ax = cur_pose.ax * cos(cur_pose.yaw) - cur_pose.ay * sin(cur_pose.yaw);
+                            double ay = cur_pose.ay * sin(cur_pose.yaw) + cur_pose.ay * cos(cur_pose.yaw);
+
+                            next_pose.x = cur_pose.x + vx * dt + 0.5 * ax * dt * dt;
+                            next_pose.y = cur_pose.y + vy * dt + 0.5 * ay * dt * dt;
 
                             next_pose.vx = cur_pose.vx + cur_pose.ax * dt;
                             next_pose.vy = cur_pose.vy + cur_pose.ay * dt;
@@ -340,24 +343,9 @@ namespace carla_pnc
                             }
                             else
                             {   
-                                // EM Planner目前只完成路径规划部分，还没有时间信息，暂时先用运动学推导位置
-                                // 运动学公式后推100ms的位置
-                                car_state next_pose;
-                                double dt = 0.1;
-                                next_pose = cur_pose;
-
-                                // 车身速度转全局速度
-                                double vx = cur_pose.vx * cos(cur_pose.yaw) - cur_pose.vy * sin(cur_pose.yaw);
-                                double vy = cur_pose.vy * sin(cur_pose.yaw) + cur_pose.vy * cos(cur_pose.yaw);
-
-                                next_pose.x = cur_pose.x + vx * dt + 0.5 * vx * dt * dt;
-                                next_pose.y = cur_pose.y + vy * dt + 0.5 * vy * dt * dt;
-
-                                next_pose.vx = cur_pose.vx + cur_pose.ax * dt;
-                                next_pose.vy = cur_pose.vy + cur_pose.ay * dt;
-                                next_pose.v = sqrt(pow(next_pose.vx, 2) + pow(next_pose.vy, 2));
-
-                                global_initial_point = next_pose;
+                                // EM Planner目前只完成路径规划部分，还没有时间信息
+                                int index = cur_pose.v;
+                                global_initial_point = pre_final_path.frenet_path[index];
                             }
 
                             // global_initial_point = cur_pose;

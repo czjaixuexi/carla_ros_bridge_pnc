@@ -18,7 +18,7 @@ qp_cost_l: 15.0
 qp_cost_dl: 150.0
 qp_cost_ddl: 10.0
 qp_cost_dddl: 1.0
-qp_cost_ref: 10.0
+qp_cost_ref: 15.0
 qp_cost_end_l: 0.0
 qp_cost_end_dl: 0.0
 qp_cost_end_ddl: 0.0

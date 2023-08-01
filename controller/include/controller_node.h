@@ -42,13 +42,13 @@ namespace carla_pnc
     {
     public:
         /***********************************整车参数**************************************/
-        double L = 2.875;                                                       // 轴距
+        double L = 3.0;                                                       // 轴距
         double cf = -155494.663;                                                // 前轮侧偏刚度,左右轮之和
         double cr = -155494.663;                                                // 后轮侧偏刚度, 左右轮之和
-        double mass_fl = 1880.0 / 4;                                            // 左前悬的质量
-        double mass_fr = 1880.0 / 4;                                            // 右前悬的质量
-        double mass_rl = 1880.0 / 4;                                            // 左后悬的质量
-        double mass_rr = 1880.0 / 4;                                            // 右后悬的质量
+        double mass_fl = 1845.0 / 4;                                            // 左前悬的质量
+        double mass_fr = 1845.0 / 4;                                            // 右前悬的质量
+        double mass_rl = 1845.0 / 4;                                            // 左后悬的质量
+        double mass_rr = 1845.0 / 4;                                            // 右后悬的质量
         double mass_front = mass_fl + mass_fr;                                  // 前悬质量
         double mass_rear = mass_rl + mass_rr;                                   // 后悬质量
         double mass = mass_front + mass_rear;                                   // 车辆载荷

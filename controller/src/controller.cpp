@@ -98,20 +98,20 @@ namespace carla_pnc
 
     /***********************************整车参数**************************************/
 
-    this->L = 2.875;                                                                     // 轴距
+    this->L = 3.0;                                                                     // 轴距
     this->cf = -155494.663;                                                              // 前轮侧偏刚度,左右轮之和
     this->cr = -155494.663;                                                              // 后轮侧偏刚度, 左右轮之和
-    this->mass_fl = 1880.0 / 4;                                                          // 左前悬的质量
-    this->mass_fr = 1880.0 / 4;                                                          // 右前悬的质量
-    this->mass_rl = 1880.0 / 4;                                                          // 左后悬的质量
-    this->mass_rr = 1880.0 / 4;                                                          // 右后悬的质量
+    this->mass_fl = 1845.0 / 4;                                                          // 左前悬的质量
+    this->mass_fr = 1845.0 / 4;                                                          // 右前悬的质量
+    this->mass_rl = 1845.0 / 4;                                                          // 左后悬的质量
+    this->mass_rr = 1845.0 / 4;                                                          // 右后悬的质量
     this->mass_front = this->mass_fl + this->mass_fr;                                    // 前悬质量
     this->mass_rear = this->mass_rl + this->mass_rr;                                     // 后悬质量
     this->mass = this->mass_front + this->mass_rear;                                     // 车辆载荷
     this->lf = this->L * (1.0 - this->mass_front / this->mass);                          // 汽车前轮到中心点的距离
     this->lr = this->L * (1.0 - this->mass_rear / this->mass);                           // 汽车后轮到中心点的距离
     this->Iz = pow(this->lf, 2) * this->mass_front + pow(this->lr, 2) * this->mass_rear; // 车辆绕z轴转动的转动惯量
-    this->max_degree = 30.0;                                                             // 最大前轮转向角(度)
+    this->max_degree = 70.0;                                                             // 最大前轮转向角(度)(carla中是最大转角是1.22对应70°)
 
     /***********************************横向控制参数**************************************/
 
@@ -540,6 +540,7 @@ namespace carla_pnc
       // ROS_INFO("cte_error: %2f, heading_error: %2f", cte_heading_error, cte_heading_error);
 
       steering = heading_error +  cte_heading_error;
+
     }
     else if (lat_control_method == "LQR_dynamics")
     {
@@ -691,14 +692,14 @@ namespace carla_pnc
 
         steer_output = cal_steering();
         steer_output = normalize_angle(steer_output);
-        // 限制前轮最大转角，这里定义前轮最大转角位于 [-30度～30度]
-        if (steer_output >= degree_to_rad(30.0))
+        // 限制前轮最大转角，这里定义前轮最大转角位于 [-70度～70度]
+        if (steer_output >= degree_to_rad(70.0))
         {
-          steer_output = degree_to_rad(30.0);
+          steer_output = degree_to_rad(70.0);
         }
-        else if (steer_output <= -degree_to_rad(30.0))
+        else if (steer_output <= -degree_to_rad(70.0))
         {
-          steer_output = -degree_to_rad(30.0);
+          steer_output = -degree_to_rad(70.0);
         }
       }
       else

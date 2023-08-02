@@ -2,11 +2,13 @@
 
 通过carla-ros-bridge在carla上实现自动驾驶planning and control。
 
-视频演示：
+视频演示链接：
 
-[<img src="https://gitee.com/czjaixuexi/typora_pictures/raw/master/img/202306202123205.png" alt="Watch the video" style="zoom: 80%;" />](https://www.bilibili.com/list/22049880?sid=3502982&desc=1&oid=360071646&bvid=BV1PX4y1s7aa)
+[Lattcice Planner](https://www.bilibili.com/video/BV1PX4y1s7aa/?share_source=copy_web&vd_source=77068d1617eedecaa9562c0df7e8d3f4)
 
+[EM Planner](https://www.bilibili.com/video/BV1qV411K7cN/?share_source=copy_web&vd_source=77068d1617eedecaa9562c0df7e8d3f4)
 
+[Control](https://www.bilibili.com/video/BV1uW4y1D72M/?share_source=copy_web&vd_source=77068d1617eedecaa9562c0df7e8d3f4)
 
 ## Table of Contents
 

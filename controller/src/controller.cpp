@@ -98,7 +98,7 @@ namespace carla_pnc
 
     /***********************************整车参数**************************************/
 
-    this->L = 3.0;                                                                     // 轴距
+    this->L = 3.0;                                                                       // 轴距
     this->cf = -155494.663;                                                              // 前轮侧偏刚度,左右轮之和
     this->cr = -155494.663;                                                              // 后轮侧偏刚度, 左右轮之和
     this->mass_fl = 1845.0 / 4;                                                          // 左前悬的质量
@@ -539,8 +539,7 @@ namespace carla_pnc
 
       // ROS_INFO("cte_error: %2f, heading_error: %2f", cte_heading_error, cte_heading_error);
 
-      steering = heading_error +  cte_heading_error;
-
+      steering = heading_error + cte_heading_error;
     }
     else if (lat_control_method == "LQR_dynamics")
     {
@@ -581,12 +580,11 @@ namespace carla_pnc
           normalize_angle(yaw_err);
       Eigen::MatrixXd k = cal_dlqr(this->desired_speed, target_index);
       Eigen::MatrixXd u = -k * err;
-    // std::cout<< Q <<std::endl;
-    // std::cout << R << std::endl;
-    // std::cout << k << std::endl;
-    // std::cout << u << std::endl;
+      // std::cout<< Q <<std::endl;
+      // std::cout << R << std::endl;
+      // std::cout << k << std::endl;
+      // std::cout << u << std::endl;
       steering = u(1, 0) + atan2(L * this->waypoints[target_index].cur, 1);
-
     }
 
     else
@@ -647,9 +645,9 @@ namespace carla_pnc
   double Controller::cal_longitudinal(const double &dt, const double &v, const double &desired_v)
   {
     double v_error = desired_v - v;
-    sum_pid_error += v_error;
+    sum_pid_error += v_error * dt;
     double k_ = this->kp * v_error;
-    double integral_ = this->ki * sum_pid_error * dt;
+    double integral_ = this->ki * sum_pid_error;
     double diff_ = this->kd * (v_error - previous["v_error"]) / dt;
 
     double throttle = k_ + integral_ + diff_;
